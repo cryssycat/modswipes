@@ -279,6 +279,51 @@
     font-size: 13px;
   }
 
+  .past-section {
+    margin-top: 36px;
+  }
+  .past-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+    padding: 12px 0;
+    border-top: 1px solid var(--glass-border);
+    user-select: none;
+  }
+  .past-summary::-webkit-details-marker { display: none; }
+  .past-chevron {
+    display: inline-block;
+    color: var(--text-low);
+    transition: transform 0.15s ease;
+    font-size: 10px;
+  }
+  .past-section[open] .past-chevron { transform: rotate(180deg); }
+  .past-count {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-low);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .past-content { padding-top: 12px; }
+  .past-month { margin-bottom: 28px; }
+  .past-month:last-child { margin-bottom: 0; }
+  .past-month-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin: 0 0 12px;
+  }
+  .past-month .grid { opacity: 0.82; }
+
   @media (max-width: 560px) {
     .panel { flex-direction: column; align-items: flex-start; }
     .stat-row { align-self: stretch; justify-content: space-between; }
@@ -318,7 +363,7 @@
     <span class="info-item"><i class="dot-mark"></i>Swipes are $20 each</span>
     <span class="info-item"><i class="dot-mark"></i>Reset monthly on the 1st</span>
     <span class="info-item"><i class="dot-mark"></i>Not eligible for moodboards / mystery designs</span>
-        <span class="info-item"><i class="dot-mark"></i>2 mods may combine swipes to get a larger item @ $40.</span>
+	   <span class="info-item"><i class="dot-mark"></i>2 mods may combine swipes to get a larger item @ $40.</span>
   </div>
 
   <div id="bannerHost"></div>
@@ -326,6 +371,15 @@
   <div class="grid" id="grid">
     <div class="empty">Loading swipe data…</div>
   </div>
+
+  <details class="past-section" id="pastSection" hidden>
+    <summary class="past-summary">
+      <span class="past-chevron">&#9662;</span>
+      <span>Past months</span>
+      <span class="past-count" id="pastCount"></span>
+    </summary>
+    <div class="past-content" id="pastContent"></div>
+  </details>
 
 </div>
 
@@ -338,12 +392,15 @@
   const PROXY_URL = 'https://modswipes.crysthigpen.workers.dev/';
   const grid = document.getElementById('grid');
   const bannerHost = document.getElementById('bannerHost');
+  const pastSection = document.getElementById('pastSection');
+  const pastContent = document.getElementById('pastContent');
+  const pastCount = document.getElementById('pastCount');
 
   const SAMPLE_ROWS = [
-    { id: '1', name: 'Riven', swipeUsed: false, month: currentMonthLabel, details: '' },
-    { id: '2', name: 'Kestrel', swipeUsed: true, month: currentMonthLabel, details: 'Cleared a warning for a first-time rule mix-up' },
-    { id: '3', name: 'Thorne', swipeUsed: false, month: currentMonthLabel, details: '' },
-    { id: '4', name: 'Ondine', swipeUsed: true, month: currentMonthLabel, details: 'Reversed a timeout on appeal' },
+    { id: '1', name: 'Riven', swipeUsed: false, month: monthNames[now.getMonth()], details: '' },
+    { id: '2', name: 'Kestrel', swipeUsed: true, month: monthNames[now.getMonth()], details: 'Cleared a warning for a first-time rule mix-up' },
+    { id: '3', name: 'Thorne', swipeUsed: false, month: monthNames[now.getMonth()], details: '' },
+    { id: '4', name: 'Ondine', swipeUsed: true, month: monthNames[now.getMonth()], details: 'Reversed a timeout on appeal' },
   ];
 
   function showBanner(msg, isError) {
@@ -351,6 +408,25 @@
   }
 
   function clearBanner() { bannerHost.innerHTML = ''; }
+
+  function cardHtml(r, i) {
+    const serial = 'MOD-' + String(i + 1).padStart(3, '0');
+    const statusClass = r.swipeUsed ? 'used' : 'available';
+    const statusLabel = r.swipeUsed ? 'Swiped' : 'Available';
+    const monthText = r.month || monthNames[now.getMonth()];
+    const detailsBlock = (r.swipeUsed && r.details)
+      ? '<div class="details"><span class="l">Used on</span>' + escapeHtml(r.details) + '</div>'
+      : '';
+    return '<div class="card">' +
+      '<div class="stripe"><span class="serial">' + serial + '</span><span class="chip"></span></div>' +
+      '<div class="body">' +
+        '<p class="name">' + escapeHtml(r.name) + '</p>' +
+        '<p class="month">' + escapeHtml(monthText) + '</p>' +
+        '<span class="status ' + statusClass + '"><span class="dot"></span>' + statusLabel + '</span>' +
+        detailsBlock +
+      '</div>' +
+    '</div>';
+  }
 
   function renderRows(rows, isSample) {
     if (isSample) {
@@ -361,33 +437,55 @@
 
     if (!rows.length) {
       grid.innerHTML = '<div class="empty">No mods found in the database yet.</div>';
+      pastSection.hidden = true;
       document.getElementById('usedCount').textContent = '0';
       document.getElementById('availCount').textContent = '0';
       document.getElementById('totalCount').textContent = '0';
       return;
     }
 
-    const used = rows.filter(r => r.swipeUsed).length;
-    document.getElementById('usedCount').textContent = used;
-    document.getElementById('availCount').textContent = rows.length - used;
-    document.getElementById('totalCount').textContent = rows.length;
+    const currentMonthName = monthNames[now.getMonth()];
+    const currentRows = rows.filter(r => (r.month || currentMonthName) === currentMonthName);
+    const pastRows = rows.filter(r => (r.month || currentMonthName) !== currentMonthName);
 
-    grid.innerHTML = rows.map((r, i) => {
-      const serial = 'MOD-' + String(i + 1).padStart(3, '0');
-      const statusClass = r.swipeUsed ? 'used' : 'available';
-      const statusLabel = r.swipeUsed ? 'Swiped' : 'Available';
-      const monthText = r.month || currentMonthLabel;
-      const detailsBlock = (r.swipeUsed && r.details)
-        ? '<div class="details"><span class="l">Used on</span>' + escapeHtml(r.details) + '</div>'
-        : '';
-      return '<div class="card">' +
-        '<div class="stripe"><span class="serial">' + serial + '</span><span class="chip"></span></div>' +
-        '<div class="body">' +
-          '<p class="name">' + escapeHtml(r.name) + '</p>' +
-          '<p class="month">' + escapeHtml(monthText) + '</p>' +
-          '<span class="status ' + statusClass + '"><span class="dot"></span>' + statusLabel + '</span>' +
-          detailsBlock +
-        '</div>' +
+    const used = currentRows.filter(r => r.swipeUsed).length;
+    document.getElementById('usedCount').textContent = used;
+    document.getElementById('availCount').textContent = currentRows.length - used;
+    document.getElementById('totalCount').textContent = currentRows.length;
+
+    grid.innerHTML = currentRows.length
+      ? currentRows.map(cardHtml).join('')
+      : '<div class="empty">No mods tracked for ' + currentMonthName + ' yet.</div>';
+
+    if (!pastRows.length) {
+      pastSection.hidden = true;
+      pastContent.innerHTML = '';
+      return;
+    }
+
+    const grouped = {};
+    pastRows.forEach(r => {
+      const m = r.month || 'Unspecified';
+      if (!grouped[m]) grouped[m] = [];
+      grouped[m].push(r);
+    });
+
+    const orderedMonths = Object.keys(grouped).sort((a, b) => {
+      const ia = monthNames.indexOf(a);
+      const ib = monthNames.indexOf(b);
+      const curIdx = monthNames.indexOf(currentMonthName);
+      const distA = ia === -1 ? 999 : (curIdx - ia + 12) % 12;
+      const distB = ib === -1 ? 999 : (curIdx - ib + 12) % 12;
+      return distA - distB;
+    });
+
+    pastSection.hidden = false;
+    pastCount.textContent = '(' + pastRows.length + ')';
+    pastContent.innerHTML = orderedMonths.map(m => {
+      const monthRows = grouped[m];
+      return '<div class="past-month">' +
+        '<p class="past-month-label">' + escapeHtml(m) + '</p>' +
+        '<div class="grid">' + monthRows.map(cardHtml).join('') + '</div>' +
       '</div>';
     }).join('');
   }
