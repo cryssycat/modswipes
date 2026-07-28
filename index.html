@@ -123,6 +123,35 @@
   }
   .btn:hover { border-color: var(--cyan); background: rgba(94,234,212,0.06); }
 
+  .info-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    align-items: center;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+  }
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-mid);
+    letter-spacing: 0.01em;
+  }
+  .info-item .dot-mark {
+    width: 5px;
+    height: 5px;
+    min-width: 5px;
+    border-radius: 50%;
+    background: var(--cyan);
+    display: inline-block;
+  }
+
   .banner {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12.5px;
@@ -267,9 +296,7 @@
   <div class="panel">
     <div>
       <p class="eyebrow" id="monthLabel">Swipe Log</p>
-      <h1>Mod swipe status</h1><Br>
-      <b>Swipes are worth $20, reset monthly, and are moodboard ineligible.<Br></b><br>
-      <b>2 mods may combine a swipe to get a larger item of up to $40.</b>
+      <h1>Mod swipe status</h1>
     </div>
     <div class="stat-row">
       <div class="stat">
@@ -285,6 +312,13 @@
         <div class="l">Mods</div>
       </div>
     </div>
+  </div>
+
+  <div class="info-banner">
+    <span class="info-item"><i class="dot-mark"></i>Swipes are $20 each</span>
+    <span class="info-item"><i class="dot-mark"></i>Reset monthly on the 1st</span>
+    <span class="info-item"><i class="dot-mark"></i>Not eligible for moodboards / mystery designs</span>
+        <span class="info-item"><i class="dot-mark"></i>2 mods may combine swipes to get a larger item @ $40.</span>
   </div>
 
   <div id="bannerHost"></div>
