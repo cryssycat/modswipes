@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swipe Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #070a12;
+    --bg-1: #0c1120;
+    --glass: rgba(255,255,255,0.045);
+    --glass-border: rgba(255,255,255,0.10);
+    --stripe: #050709;
+    --text-hi: #f4f6fb;
+    --text-mid: #9aa4bd;
+    --text-low: #5c6480;
+    --cyan: #5eead4;
+    --cyan-dim: rgba(94,234,212,0.14);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.14);
+    --red: #f87171;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(94,234,212,0.09), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(251,191,36,0.06), transparent 55%),
+      var(--bg-0);
+    color: var(--text-hi);
+    font-family: 'Inter', sans-serif;
+    padding: 48px 24px 80px;
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  .panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding-bottom: 28px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 34px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-row { display: flex; gap: 28px; }
+
+  .stat { text-align: right; }
+  .stat .n {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-hi);
+    line-height: 1;
+  }
+  .stat .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin-top: 6px;
+  }
+
+  .config-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .config-bar input {
+    flex: 1;
+    min-width: 240px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+  .config-bar input::placeholder { color: var(--text-low); }
+  .config-bar input:focus { border-color: var(--cyan); }
+  .btn {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { border-color: var(--cyan); background: rgba(94,234,212,0.06); }
+
+  .banner {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text-mid);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-left: 3px solid var(--amber);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .banner.error { border-left-color: var(--red); color: #f2b8b8; }
+  .banner a { color: var(--cyan); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--glass);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    overflow: hidden;
+    padding: 0 0 18px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+
+  .card .stripe {
+    height: 30px;
+    background: var(--stripe);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .card .serial {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-low);
+  }
+  .card .chip {
+    width: 20px;
+    height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #4b4530, #7a6d3d);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .card .body { padding: 18px 18px 0; }
+
+  .card .name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    margin: 0 0 4px;
+    color: var(--text-hi);
+  }
+  .card .month {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-low);
+    margin: 0 0 16px;
+    letter-spacing: 0.04em;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    border-radius: 100px;
+  }
+  .status.available { background: var(--cyan-dim); color: var(--cyan); }
+  .status.used { background: var(--amber-dim); color: var(--amber); }
+
+  .status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .status.available .dot { animation: pulse 2s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .details {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--glass-border);
+    font-size: 13px;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+  .details .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-low);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-low);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  @media (max-width: 560px) {
+    .panel { flex-direction: column; align-items: flex-start; }
+    .stat-row { align-self: stretch; justify-content: space-between; }
+    .stat { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="config-bar" id="configBar">
+    <input type="text" id="proxyUrl" placeholder="Paste your proxy URL (e.g. https://swipe-tracker.yourname.workers.dev)">
+    <button class="btn" id="saveBtn">Save</button>
+    <button class="btn" id="refreshBtn">Refresh</button>
+  </div>
+
+  <div class="panel">
+    <div>
+      <p class="eyebrow" id="monthLabel">Swipe Log</p>
+      <h1>Mod swipe status</h1>
+    </div>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="n" id="usedCount">–</div>
+        <div class="l">Used</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="availCount">–</div>
+        <div class="l">Available</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="totalCount">–</div>
+        <div class="l">Mods</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bannerHost"></div>
+
+  <div class="grid" id="grid">
+    <div class="empty">Loading swipe data…</div>
+  </div>
+
+</div>
+
+<script>
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const now = new Date();
+  const currentMonthLabel = monthNames[now.getMonth()] + " " + now.getFullYear();
+  document.getElementById('monthLabel').textContent = "Swipe Log — " + currentMonthLabel;
+
+  const proxyInput = document.getElementById('proxyUrl');
+  const grid = document.getElementById('grid');
+  const bannerHost = document.getElementById('bannerHost');
+
+  const SAMPLE_ROWS = [
+    { id: '1', name: 'Riven', swipeUsed: false, month: currentMonthLabel, details: '' },
+    { id: '2', name: 'Kestrel', swipeUsed: true, month: currentMonthLabel, details: 'Cleared a warning for a first-time rule mix-up' },
+    { id: '3', name: 'Thorne', swipeUsed: false, month: currentMonthLabel, details: '' },
+    { id: '4', name: 'Ondine', swipeUsed: true, month: currentMonthLabel, details: 'Reversed a timeout on appeal' },
+  ];
+
+  function showBanner(msg, isError) {
+    bannerHost.innerHTML = '<div class="banner' + (isError ? ' error' : '') + '">' + msg + '</div>';
+  }
+
+  function clearBanner() { bannerHost.innerHTML = ''; }
+
+  function renderRows(rows, isSample) {
+    if (isSample) {
+      showBanner('Showing sample data. Paste your proxy URL above and hit Save to connect your real Notion database. See the setup notes in chat for how to deploy the proxy.', false);
+    } else {
+      clearBanner();
+    }
+
+    if (!rows.length) {
+      grid.innerHTML = '<div class="empty">No mods found in the database yet.</div>';
+      document.getElementById('usedCount').textContent = '0';
+      document.getElementById('availCount').textContent = '0';
+      document.getElementById('totalCount').textContent = '0';
+      return;
+    }
+
+    const used = rows.filter(r => r.swipeUsed).length;
+    document.getElementById('usedCount').textContent = used;
+    document.getElementById('availCount').textContent = rows.length - used;
+    document.getElementById('totalCount').textContent = rows.length;
+
+    grid.innerHTML = rows.map((r, i) => {
+      const serial = 'MOD-' + String(i + 1).padStart(3, '0');
+      const statusClass = r.swipeUsed ? 'used' : 'available';
+      const statusLabel = r.swipeUsed ? 'Swiped' : 'Available';
+      const monthText = r.month || currentMonthLabel;
+      const detailsBlock = (r.swipeUsed && r.details)
+        ? '<div class="details"><span class="l">Used on</span>' + escapeHtml(r.details) + '</div>'
+        : '';
+      return '<div class="card">' +
+        '<div class="stripe"><span class="serial">' + serial + '</span><span class="chip"></span></div>' +
+        '<div class="body">' +
+          '<p class="name">' + escapeHtml(r.name) + '</p>' +
+          '<p class="month">' + escapeHtml(monthText) + '</p>' +
+          '<span class="status ' + statusClass + '"><span class="dot"></span>' + statusLabel + '</span>' +
+          detailsBlock +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function loadData() {
+    let savedUrl = '';
+    try {
+      const stored = await window.storage.get('proxy-url');
+      if (stored) savedUrl = stored.value;
+    } catch (e) {}
+
+    if (savedUrl) proxyInput.value = savedUrl;
+
+    if (!savedUrl) {
+      renderRows(SAMPLE_ROWS, true);
+      return;
+    }
+
+    grid.innerHTML = '<div class="empty">Loading swipe data…</div>';
+    try {
+      const res = await fetch(savedUrl);
+      const data = await res.json();
+      if (data.error) {
+        showBanner('Proxy returned an error: ' + escapeHtml(data.error) + '. Check the worker logs and env vars.', true);
+        renderRows(SAMPLE_ROWS, false);
+        return;
+      }
+      renderRows(data.rows || [], false);
+    } catch (err) {
+      showBanner('Could not reach the proxy URL. Double check it is correct and deployed.', true);
+      renderRows(SAMPLE_ROWS, false);
+    }
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const url = proxyInput.value.trim();
+    try {
+      await window.storage.set('proxy-url', url, false);
+    } catch (e) {}
+    loadData();
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+  loadData();
+</script>
+</body>
+</html>
