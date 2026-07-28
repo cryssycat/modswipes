@@ -260,9 +260,7 @@
 <body>
 <div class="wrap">
 
-  <div class="config-bar" id="configBar">
-    <input type="text" id="proxyUrl" placeholder="Paste your proxy URL (e.g. https://swipe-tracker.yourname.workers.dev)">
-    <button class="btn" id="saveBtn">Save</button>
+  <div class="config-bar" id="configBar" style="justify-content: flex-end;">
     <button class="btn" id="refreshBtn">Refresh</button>
   </div>
 
@@ -301,7 +299,7 @@
   const currentMonthLabel = monthNames[now.getMonth()] + " " + now.getFullYear();
   document.getElementById('monthLabel').textContent = "Swipe Log — " + currentMonthLabel;
 
-  const proxyInput = document.getElementById('proxyUrl');
+  const PROXY_URL = 'https://modswipes.crysthigpen.workers.dev/';
   const grid = document.getElementById('grid');
   const bannerHost = document.getElementById('bannerHost');
 
@@ -320,7 +318,7 @@
 
   function renderRows(rows, isSample) {
     if (isSample) {
-      showBanner('Showing sample data. Paste your proxy URL above and hit Save to connect your real Notion database. See the setup notes in chat for how to deploy the proxy.', false);
+      showBanner('Showing sample data. Could not load live data from the worker yet — check that it is deployed with NOTION_TOKEN and NOTION_DATABASE_ID set.', false);
     } else {
       clearBanner();
     }
@@ -365,22 +363,9 @@
   }
 
   async function loadData() {
-    let savedUrl = '';
-    try {
-      const stored = await window.storage.get('proxy-url');
-      if (stored) savedUrl = stored.value;
-    } catch (e) {}
-
-    if (savedUrl) proxyInput.value = savedUrl;
-
-    if (!savedUrl) {
-      renderRows(SAMPLE_ROWS, true);
-      return;
-    }
-
     grid.innerHTML = '<div class="empty">Loading swipe data…</div>';
     try {
-      const res = await fetch(savedUrl);
+      const res = await fetch(PROXY_URL);
       const data = await res.json();
       if (data.error) {
         showBanner('Proxy returned an error: ' + escapeHtml(data.error) + '. Check the worker logs and env vars.', true);
@@ -389,18 +374,10 @@
       }
       renderRows(data.rows || [], false);
     } catch (err) {
-      showBanner('Could not reach the proxy URL. Double check it is correct and deployed.', true);
+      showBanner('Could not reach the proxy URL. Double check it is deployed and the env vars are set.', true);
       renderRows(SAMPLE_ROWS, false);
     }
   }
-
-  document.getElementById('saveBtn').addEventListener('click', async () => {
-    const url = proxyInput.value.trim();
-    try {
-      await window.storage.set('proxy-url', url, false);
-    } catch (e) {}
-    loadData();
-  });
 
   document.getElementById('refreshBtn').addEventListener('click', loadData);
 
